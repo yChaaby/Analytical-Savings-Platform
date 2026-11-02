@@ -64,7 +64,7 @@ flowchart LR
 | dbt (Cloud ou Core) | 40 modèles en 3 couches, seeds, snapshot, macros portables Snowflake/DuckDB, 83 tests de données + unit tests |
 | Semantic layer MetricFlow | 6 semantic models, 30 métriques (simple, ratio, dérivée, cumulative), 2 saved queries |
 | Metabase | Docker Compose local + 12 questions SQL versionnées + script qui crée le dashboard par API |
-| dbt Docs, Confluence | Descriptions sur tous les modèles et colonnes clés, lineage via `dbt docs`, décisions dans `docs/architecture.md` |
+| dbt Docs | Descriptions sur tous les modèles et colonnes clés, lineage via `dbt docs`, décisions dans `docs/architecture.md` |
 
 ---
 
@@ -105,7 +105,7 @@ Sur les données générées, il retrouve les anomalies injectées avec très pe
 
 ---
 
-## Les données
+## Les données : fictifs
 
 Les données clients d'une fintech ne sont jamais publiques (secret professionnel, RGPD).
 Le générateur `ingestion/generate_sources.py` produit donc un jeu **synthétique et cohérent**,
@@ -186,7 +186,7 @@ d'environnement de dbt Cloud.
 
 ---
 
-## Metabase en local
+## Metabase en local (essayé aussi la v0.64)
 
 Prérequis : Docker Desktop.
 
@@ -278,7 +278,7 @@ Choix notables, détaillés dans [`docs/architecture.md`](docs/architecture.md) 
 
 ---
 
-## Limites et pistes
+## Perspectives
 
 - **Ingestion** : un vrai déploiement utiliserait Fivetran (ou dlt / Airbyte). Le chargeur recrée les tables à chaque exécution, sans incrémental.
 - **Fonds euros** : le rendement est couru quotidiennement (en réalité, il est crédité une fois par an).
@@ -288,6 +288,3 @@ Choix notables, détaillés dans [`docs/architecture.md`](docs/architecture.md) 
   - masquer les données personnelles par rôle (Snowflake masking policies) ;
   - mesurer l'usage des dashboards pour retirer ceux qui ne servent plus.
 
----
-
-Projet personnel réalisé par Youssef Chaabi.
