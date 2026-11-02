@@ -1,0 +1,8 @@
+version: 2
+
+models:
+  - name: fct_tickets
+    description: Tickets du service client, rattachés au client par email normalisé.
+    columns:
+      - name: ticket_id
+        data_tests: [unique, not_null]

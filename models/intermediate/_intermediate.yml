@@ -1,0 +1,137 @@
+version: 2
+
+models:
+  - name: int_date_arrete
+    description: Date d'arrêté des données (dernière valorisation reçue). Une seule ligne.
+
+  - name: int_contrats_enrichis
+    description: Contrats enrichis du référentiel produit (enveloppe, taux de frais contractuels).
+    columns:
+      - name: contrat_id
+        data_tests: [unique, not_null]
+      - name: enveloppe
+        data_tests: [not_null]
+
+  - name: int_valorisations_unifiees
+    description: Encours quotidiens des trois partenaires, unifiés et rattachés au contrat.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [contrat_id, date_valorisation]
+
+  - name: int_frais_partenaires
+    description: Frais prélevés par les partenaires (enveloppe + mandat), unifiés par contrat et par mois.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [contrat_id, mois]
+
+  - name: int_profil_contrat_historique
+    description: Profil de gestion en vigueur par contrat et par période (SCD type 2).
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [contrat_id, valide_du]
+
+  - name: int_mouvements_executes
+    columns:
+      - name: mouvement_id
+        data_tests: [unique, not_null]
+
+  - name: int_frais_mensuels_contrats
+    description: Frais théoriques (règle contractuelle) et frais prélevés, par contrat et par mois.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [contrat_id, mois]
+
+  - name: int_apports_nets_mensuels
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [contrat_id, mois]
+
+  - name: int_offres_droits
+    description: >
+      Droits des offres promotionnelles par contrat et par mois de référence, recalculés selon les
+      conditions générales (palier, durée, plafond, maintien des apports). Une ligne par mois couvert.
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [contrat_id, mois_reference]
+    columns:
+      - name: montant_du_eur
+        data_tests: [not_null, positive_value]
+
+unit_tests:
+  - name: test_offre_remboursement_palier_plafond_rupture
+    description: >
+      Remboursement 3 mois plafonné à 50 € : le 1er mois entier suit la souscription, le plafond
+      limite le 2e mois, et une rupture de condition (rachat) éteint le 3e mois.
+    model: int_offres_droits
+    given:
+      - input: ref('int_contrats_enrichis')
+        rows:
+          - { contrat_id: 1, client_id: 10, produit: assurance_vie, code_promo: TEST, ouvert_le: "2025-01-15 10:00:00" }
+      - input: ref('stg_app__promo_codes')
+        rows:
+          - { code_promo: TEST, type_offre: remboursement_frais, plafond_eur: 50 }
+      - input: ref('int_mouvements_executes')
+        rows:
+          - { mouvement_id: 1, contrat_id: 1, type_mouvement: versement_initial, montant_eur: 6000, execute_le: "2025-01-17 10:00:00" }
+      - input: ref('offres_paliers')
+        rows:
+          - { code_promo: TEST, palier_min_eur: 5000, nb_mois_rembourses: 3, prime_eur: null }
+      - input: ref('metricflow_time_spine')
+        rows:
+          - { date_day: "2025-01-01" }
+          - { date_day: "2025-02-01" }
+          - { date_day: "2025-03-01" }
+          - { date_day: "2025-04-01" }
+          - { date_day: "2025-05-01" }
+      - input: ref('int_apports_nets_mensuels')
+        rows:
+          - { contrat_id: 1, mois: "2025-02-01", apports_nets_cumules_eur: 6000, est_cloture_fin_de_mois: false }
+          - { contrat_id: 1, mois: "2025-03-01", apports_nets_cumules_eur: 6000, est_cloture_fin_de_mois: false }
+          - { contrat_id: 1, mois: "2025-04-01", apports_nets_cumules_eur: 3000, est_cloture_fin_de_mois: false }
+      - input: ref('int_frais_partenaires')
+        rows:
+          - { contrat_id: 1, mois: "2025-02-01", frais_totaux_eur: 30 }
+          - { contrat_id: 1, mois: "2025-03-01", frais_totaux_eur: 30 }
+          - { contrat_id: 1, mois: "2025-04-01", frais_totaux_eur: 30 }
+    expect:
+      rows:
+        - { contrat_id: 1, mois_reference: "2025-02-01", montant_du_eur: 30, droit_ouvert: true }
+        - { contrat_id: 1, mois_reference: "2025-03-01", montant_du_eur: 20, droit_ouvert: true }
+        - { contrat_id: 1, mois_reference: "2025-04-01", montant_du_eur: 0, droit_ouvert: false }
+
+  - name: test_offre_prime_palier
+    description: Prime au palier atteint par le versement initial, versée au 3e mois si les apports sont maintenus.
+    model: int_offres_droits
+    given:
+      - input: ref('int_contrats_enrichis')
+        rows:
+          - { contrat_id: 2, client_id: 20, produit: assurance_vie, code_promo: PRIME, ouvert_le: "2025-01-20 10:00:00" }
+      - input: ref('stg_app__promo_codes')
+        rows:
+          - { code_promo: PRIME, type_offre: prime, plafond_eur: 500 }
+      - input: ref('int_mouvements_executes')
+        rows:
+          - { mouvement_id: 2, contrat_id: 2, type_mouvement: versement_initial, montant_eur: 30000, execute_le: "2025-01-22 10:00:00" }
+      - input: ref('offres_paliers')
+        rows:
+          - { code_promo: PRIME, palier_min_eur: 10000, nb_mois_rembourses: null, prime_eur: 100 }
+          - { code_promo: PRIME, palier_min_eur: 25000, nb_mois_rembourses: null, prime_eur: 250 }
+          - { code_promo: PRIME, palier_min_eur: 50000, nb_mois_rembourses: null, prime_eur: 500 }
+      - input: ref('metricflow_time_spine')
+        rows:
+          - { date_day: "2025-04-01" }
+      - input: ref('int_apports_nets_mensuels')
+        rows:
+          - { contrat_id: 2, mois: "2025-04-01", apports_nets_cumules_eur: 30000, est_cloture_fin_de_mois: false }
+      - input: ref('int_frais_partenaires')
+        rows:
+          - { contrat_id: 2, mois: "2025-04-01", frais_totaux_eur: 40 }
+    expect:
+      rows:
+        - { contrat_id: 2, mois_reference: "2025-04-01", palier_min_eur: 25000, montant_du_eur: 250 }

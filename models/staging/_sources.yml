@@ -1,0 +1,79 @@
+version: 2
+
+sources:
+  - name: app
+    description: Back-office (base de production), répliqué par Fivetran.
+    database: "{{ env_var('SNOWFLAKE_RAW_DATABASE', target.database) }}"
+    schema: raw_app
+    loaded_at_field: _fivetran_synced
+    freshness:
+      warn_after: { count: 24, period: hour }
+      error_after: { count: 72, period: hour }
+    tables:
+      - name: clients
+        description: Personnes inscrites (y compris prospects et enfants mineurs titulaires d'un contrat).
+      - name: contracts
+        description: Contrats (assurance-vie, PER, PEA, compte-titres).
+      - name: movements
+        description: Versements, transferts entrants et rachats.
+      - name: mandate_changes
+        description: Changements de profil de gestion (demande client, questionnaire, désensibilisation PER).
+      - name: products
+        description: Référentiel produits (frais, minimums, profils ouverts).
+      - name: profile_allocations
+        description: Allocation cible de chaque profil P1 à P10, par famille d'enveloppe.
+      - name: promo_codes
+        description: Offres promotionnelles (dates, produits éligibles, plafond).
+      - name: promo_payments
+        description: Paiements des offres saisis par l'équipe opérations (remboursements de frais, primes).
+
+  - name: suravenir
+    description: Fichiers quotidiens et mensuels de l'assureur vie (assurance-vie, assurance-vie enfant).
+    database: "{{ env_var('SNOWFLAKE_RAW_DATABASE', target.database) }}"
+    schema: raw_suravenir
+    loaded_at_field: _fivetran_synced
+    freshness:
+      warn_after: { count: 30, period: hour }
+    tables:
+      - name: valorisations
+      - name: frais
+
+  - name: spirica
+    description: Fichiers de l'assureur du PER assurantiel.
+    database: "{{ env_var('SNOWFLAKE_RAW_DATABASE', target.database) }}"
+    schema: raw_spirica
+    loaded_at_field: _fivetran_synced
+    tables:
+      - name: valuations
+      - name: fees
+
+  - name: ca_titres
+    description: Fichiers du teneur de compte (PEA, compte-titres, PER bancaire).
+    database: "{{ env_var('SNOWFLAKE_RAW_DATABASE', target.database) }}"
+    schema: raw_ca_titres
+    loaded_at_field: _fivetran_synced
+    tables:
+      - name: positions
+      - name: frais
+
+  - name: market
+    description: Prix quotidiens des supports (fournisseur de données de marché).
+    database: "{{ env_var('SNOWFLAKE_RAW_DATABASE', target.database) }}"
+    schema: raw_market
+    tables:
+      - name: supports
+      - name: prix_supports
+
+  - name: crm
+    description: Outil CRM / marketing automation.
+    database: "{{ env_var('SNOWFLAKE_RAW_DATABASE', target.database) }}"
+    schema: raw_crm
+    tables:
+      - name: contacts
+
+  - name: zendesk
+    description: Outil du service client.
+    database: "{{ env_var('SNOWFLAKE_RAW_DATABASE', target.database) }}"
+    schema: raw_zendesk
+    tables:
+      - name: tickets

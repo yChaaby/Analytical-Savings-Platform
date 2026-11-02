@@ -1,0 +1,12 @@
+use role accountadmin;
+drop database if exists analytics;
+drop database if exists raw;
+drop user if exists alto_svc;
+drop user if exists metabase_svc;
+drop warehouse if exists loading_wh;
+drop warehouse if exists transforming_wh;
+drop warehouse if exists reporting_wh;
+drop role if exists loader;
+drop role if exists transformer;
+drop role if exists reporter;
+drop resource monitor if exists trial_monitor;

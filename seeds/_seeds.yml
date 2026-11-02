@@ -1,0 +1,23 @@
+version: 2
+
+seeds:
+  - name: partenaires
+    description: Référentiel des partenaires (assureurs, teneur de compte), maintenu par l'équipe data.
+    columns:
+      - name: partenaire
+        data_tests: [unique, not_null]
+
+  - name: offres_paliers
+    description: >
+      Paliers des offres promotionnelles, saisis par l'équipe data à partir des conditions générales
+      de chaque offre (versement initial net minimum -> nombre de mois de frais remboursés ou prime).
+      Source de vérité du calcul des droits ; à mettre à jour à chaque nouvelle offre.
+    config:
+      column_types:
+        palier_min_eur: integer
+        nb_mois_rembourses: integer
+        prime_eur: integer
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [code_promo, palier_min_eur]

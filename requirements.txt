@@ -1,0 +1,11 @@
+# dbt Core + adaptateurs Snowflake et DuckDB + MetricFlow (CLI `mf`)
+dbt-metricflow[dbt-snowflake,dbt-duckdb]>=0.15
+snowflake-connector-python[pandas]>=3.12
+# génération des données
+pandas>=2.2
+numpy>=2.0
+pyarrow>=15
+faker>=30
+duckdb>=1.1
+# Metabase as code
+requests>=2.31

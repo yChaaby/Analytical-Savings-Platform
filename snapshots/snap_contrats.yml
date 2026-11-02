@@ -1,0 +1,7 @@
+snapshots:
+  - name: snap_contrats
+    relation: ref('dim_contrats')
+    config:
+      unique_key: contrat_id
+      strategy: check
+      check_cols: [statut, profil_actuel, date_cloture]

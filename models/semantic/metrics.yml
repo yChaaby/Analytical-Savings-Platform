@@ -1,0 +1,242 @@
+metrics:
+
+  - name: encours
+    label: Encours sous gestion (€)
+    description: >
+      Valeur totale des contrats au dernier jour valorisé de la période, tous partenaires
+      (stock : jamais additionné sur plusieurs jours).
+    type: simple
+    type_params:
+      measure: encours_eur
+
+  - name: encours_uc
+    label: Encours en unités de compte (€)
+    description: Part de l'encours investie en ETF / OPC (hors fonds euros), au dernier jour de la période. Base des frais de mandat.
+    type: simple
+    type_params:
+      measure: encours_uc_eur
+
+  - name: part_uc
+    label: Part des unités de compte
+    description: Encours en unités de compte rapporté à l'encours total, au dernier jour de la période.
+    type: ratio
+    type_params:
+      numerator: encours_uc
+      denominator: encours
+
+  - name: clients_avec_encours
+    label: Clients avec encours
+    description: Nombre de titulaires d'au moins un contrat valorisé au dernier jour de la période.
+    type: simple
+    type_params:
+      measure: clients_avec_encours
+
+  - name: encours_moyen_par_client
+    label: Encours moyen par client (€)
+    description: Encours divisé par le nombre de clients avec encours, au dernier jour de la période.
+    type: ratio
+    type_params:
+      numerator: encours
+      denominator: clients_avec_encours
+
+  - name: collecte_brute
+    label: Collecte brute (€)
+    description: Somme des apports exécutés sur la période - versements initiaux, programmés, libres et transferts entrants.
+    type: simple
+    type_params:
+      measure: montant_apports_eur
+
+  - name: transferts_entrants
+    label: Transferts entrants (€)
+    description: Montants transférés depuis un contrat externe (PER, PEA) sur la période. Inclus dans la collecte brute.
+    type: simple
+    type_params:
+      measure: montant_transferts_entrants_eur
+
+  - name: rachats
+    label: Rachats (€)
+    description: Somme des rachats exécutés (partiels et totaux) sur la période.
+    type: simple
+    type_params:
+      measure: montant_retraits_eur
+
+  - name: collecte_nette
+    label: Collecte nette (€)
+    description: Collecte brute moins rachats sur la période. Principal indicateur de croissance.
+    type: derived
+    type_params:
+      expr: collecte_brute - rachats
+      metrics:
+        - name: collecte_brute
+        - name: rachats
+
+  - name: taux_de_rachat
+    label: Taux de rachat
+    description: Rachats rapportés à la collecte brute de la même période.
+    type: ratio
+    type_params:
+      numerator: rachats
+      denominator: collecte_brute
+
+  - name: collecte_nette_cumulee_annee
+    label: Collecte nette cumulée depuis le 1er janvier (€)
+    description: Collecte nette cumulée depuis le début de l'année civile (year-to-date).
+    type: derived
+    type_params:
+      expr: collecte_brute_ytd - rachats_ytd
+      metrics:
+        - name: collecte_brute_ytd
+        - name: rachats_ytd
+
+  - name: collecte_brute_ytd
+    label: Collecte brute cumulée depuis le 1er janvier (€)
+    description: Collecte brute cumulée depuis le début de l'année civile.
+    type: cumulative
+    type_params:
+      measure: montant_apports_eur
+      cumulative_type_params:
+        grain_to_date: year
+
+  - name: rachats_ytd
+    label: Rachats cumulés depuis le 1er janvier (€)
+    description: Rachats cumulés depuis le début de l'année civile.
+    type: cumulative
+    type_params:
+      measure: montant_retraits_eur
+      cumulative_type_params:
+        grain_to_date: year
+
+  - name: revenus_mandat
+    label: Revenus de frais de mandat (€)
+    description: Frais de gestion sous mandat (0,70 %/an sur la part UC) prélevés par les partenaires pour la société de gestion.
+    type: simple
+    type_params:
+      measure: frais_mandat_preleves_eur
+
+  - name: frais_enveloppe
+    label: Frais d'enveloppe (€)
+    description: Frais prélevés par les partenaires pour leur propre compte (assureur, teneur de compte).
+    type: simple
+    type_params:
+      measure: frais_enveloppe_preleves_eur
+
+  - name: cout_offres_remboursement
+    label: Coût des offres « frais remboursés » (€)
+    description: Remboursements de frais dus aux clients au titre des offres promotionnelles, par mois de référence.
+    type: simple
+    type_params:
+      measure: cout_offres_remboursement_eur
+
+  - name: revenus_nets
+    label: Revenus nets de frais (€)
+    description: Revenus de frais de mandat moins les remboursements dus au titre des offres (hors primes).
+    type: simple
+    type_params:
+      measure: revenu_net_frais_eur
+
+  - name: taux_de_marge_frais
+    label: Taux de revenus nets sur encours UC
+    description: Revenus nets de la période rapportés à l'encours UC de fin de période.
+    type: ratio
+    type_params:
+      numerator: revenus_nets
+      denominator: encours_uc
+
+  - name: ecarts_frais_a_investiguer
+    label: Écarts de frais à investiguer
+    description: Contrats-mois dont les frais prélevés s'écartent des frais contractuels au-delà de la tolérance.
+    type: simple
+    type_params:
+      measure: nb_ecarts_frais
+
+  - name: droits_offres
+    label: Droits des offres promotionnelles (€)
+    description: Montants dus aux clients au titre des offres (remboursements de frais et primes), par date d'échéance.
+    type: simple
+    type_params:
+      measure: montant_droits_offres_eur
+
+  - name: primes_offres
+    label: Primes versées au titre des offres (€)
+    description: Primes fixes dues au titre des offres promotionnelles, par date d'échéance.
+    type: simple
+    type_params:
+      measure: montant_primes_eur
+
+  - name: inscriptions
+    label: Inscriptions
+    description: Nombre de comptes créés sur la période (KYC validé ou non, hors mineurs titulaires).
+    type: simple
+    type_params:
+      measure: nb_inscrits
+
+  - name: nouveaux_clients
+    label: Nouveaux clients investis
+    description: Inscrits de la période ayant ouvert au moins un contrat (date = date d'inscription).
+    type: simple
+    type_params:
+      measure: nb_clients_investis
+
+  - name: taux_conversion_inscription
+    label: Taux de conversion inscription -> investissement
+    description: Part des inscrits de la période ayant ouvert au moins un contrat.
+    type: ratio
+    type_params:
+      numerator: nouveaux_clients
+      denominator: inscriptions
+
+  - name: clients_partis
+    label: Clients partis
+    description: Clients dont le dernier contrat a été clôturé sur la période (date de churn).
+    type: simple
+    type_params:
+      measure: nb_clients_partis
+
+  - name: tickets
+    label: Tickets
+    description: Nombre de tickets créés au service client sur la période.
+    type: simple
+    type_params:
+      measure: nb_tickets
+
+  - name: tickets_insatisfaits
+    label: Tickets insatisfaits
+    description: Tickets notés « mauvais » par le client.
+    type: simple
+    type_params:
+      measure: nb_tickets_insatisfaits
+
+  - name: tickets_notes
+    label: Tickets notés
+    description: Tickets ayant reçu une note de satisfaction.
+    type: simple
+    type_params:
+      measure: nb_tickets_notes
+
+  - name: taux_insatisfaction
+    label: Taux d'insatisfaction
+    description: Part des tickets notés ayant reçu une note « mauvaise ».
+    type: ratio
+    type_params:
+      numerator: tickets_insatisfaits
+      denominator: tickets_notes
+
+  - name: delai_resolution_median
+    label: Délai médian de résolution (h)
+    description: Médiane du délai entre création et résolution des tickets résolus, en heures.
+    type: simple
+    type_params:
+      measure: delai_resolution_median_h
+
+saved_queries:
+  - name: reporting_mensuel_direction
+    description: Tableau de bord mensuel de la direction - encours, collecte, revenus.
+    query_params:
+      metrics: [encours, collecte_brute, rachats, collecte_nette, revenus_mandat, revenus_nets]
+      group_by: ["TimeDimension('metric_time', 'month')"]
+
+  - name: collecte_par_enveloppe
+    description: Collecte nette mensuelle par enveloppe fiscale.
+    query_params:
+      metrics: [collecte_brute, rachats, collecte_nette]
+      group_by: ["TimeDimension('metric_time', 'month')", "Dimension('mouvement__enveloppe')"]

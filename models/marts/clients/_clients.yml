@@ -1,0 +1,44 @@
+version: 2
+
+models:
+  - name: dim_clients
+    description: Dimension client, une ligne par personne inscrite.
+    config:
+      meta: { owner: equipe-data, domaine: clients }
+    columns:
+      - name: client_id
+        data_tests: [unique, not_null]
+      - name: statut_client
+        description: prospect (KYC non validé), inscrit_sans_contrat, actif (≥ 1 contrat ouvert), parti.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["prospect", "inscrit_sans_contrat", "actif", "parti"]
+      - name: segment_encours
+        description: Tranche d'encours ; « gestion_privee_100k_plus » donne accès à un conseiller dédié.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["sans_encours", "moins_10k", "10k_50k", "50k_100k", "gestion_privee_100k_plus"]
+      - name: encours_actuel_eur
+        data_tests: [positive_value]
+
+  - name: dim_contrats
+    description: Dimension contrat, avec profil actuel et encours à la date d'arrêté.
+    columns:
+      - name: contrat_id
+        data_tests: [unique, not_null]
+      - name: profil_actuel
+        data_tests: [not_null]
+
+  - name: clients_valeur
+    description: Modèle de valeur client (revenu historique, revenu courant, valeur projetée à 5 ans).
+    columns:
+      - name: client_id
+        data_tests: [unique, not_null]
+
+  - name: clients_a_contacter
+    description: Liste d'appel des conseillers - clients actifs à risque de départ, score et motifs en clair.
+    columns:
+      - name: client_id
+        data_tests: [unique, not_null]

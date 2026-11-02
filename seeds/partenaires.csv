@@ -1,0 +1,4 @@
+partenaire,nom_partenaire,type_partenaire,produits,format_reference_contrat
+SURAVENIR,Suravenir,assureur,assurance_vie|assurance_vie_kids,SV + 8 chiffres
+SPIRICA,Spirica,assureur,per_assurantiel,SP- + identifiant
+CA_TITRES,Crédit Agricole Titres,teneur_de_compte,pea|cto|per_bancaire,CAT + 9 chiffres

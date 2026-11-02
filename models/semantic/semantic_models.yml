@@ -1,0 +1,246 @@
+semantic_models:
+
+  - name: encours
+    description: Encours quotidien par contrat (stock, non additif dans le temps).
+    model: ref('fct_encours_quotidien')
+    defaults:
+      agg_time_dimension: date_valorisation
+    primary_entity: encours_ligne
+    entities:
+      - name: contrat
+        type: foreign
+        expr: contrat_id
+      - name: client
+        type: foreign
+        expr: client_id
+    dimensions:
+      - name: date_valorisation
+        type: time
+        type_params:
+          time_granularity: day
+      - name: produit
+        type: categorical
+      - name: enveloppe
+        type: categorical
+      - name: partenaire
+        type: categorical
+      - name: profil
+        type: categorical
+    measures:
+      - name: encours_eur
+        description: Somme des encours ; sur une période, valeur du dernier jour valorisé.
+        agg: sum
+        non_additive_dimension:
+          name: date_valorisation
+          window_choice: max
+      - name: encours_uc_eur
+        agg: sum
+        non_additive_dimension:
+          name: date_valorisation
+          window_choice: max
+      - name: encours_fonds_euros_eur
+        agg: sum
+        non_additive_dimension:
+          name: date_valorisation
+          window_choice: max
+      - name: clients_avec_encours
+        agg: count_distinct
+        expr: client_id
+        non_additive_dimension:
+          name: date_valorisation
+          window_choice: max
+
+  - name: mouvements
+    description: Versements, transferts entrants et rachats exécutés.
+    model: ref('fct_mouvements')
+    defaults:
+      agg_time_dimension: date_execution
+    entities:
+      - name: mouvement
+        type: primary
+        expr: mouvement_id
+      - name: contrat
+        type: foreign
+        expr: contrat_id
+      - name: client
+        type: foreign
+        expr: client_id
+    dimensions:
+      - name: date_execution
+        type: time
+        type_params:
+          time_granularity: day
+      - name: type_mouvement
+        type: categorical
+      - name: sens
+        type: categorical
+      - name: produit
+        type: categorical
+      - name: enveloppe
+        type: categorical
+      - name: partenaire
+        type: categorical
+    measures:
+      - name: montant_apports_eur
+        agg: sum
+        expr: "case when sens = 'apport' then montant_eur else 0 end"
+      - name: montant_transferts_entrants_eur
+        agg: sum
+        expr: "case when type_mouvement = 'transfert_entrant' then montant_eur else 0 end"
+      - name: montant_retraits_eur
+        agg: sum
+        expr: "case when sens = 'retrait' then montant_eur else 0 end"
+      - name: nb_mouvements
+        agg: count
+        expr: mouvement_id
+
+  - name: frais
+    description: Frais et revenus mensuels par contrat.
+    model: ref('fct_frais_mensuels')
+    defaults:
+      agg_time_dimension: mois
+    primary_entity: frais_ligne
+    entities:
+      - name: contrat
+        type: foreign
+        expr: contrat_id
+      - name: client
+        type: foreign
+        expr: client_id
+    dimensions:
+      - name: mois
+        type: time
+        type_params:
+          time_granularity: month
+      - name: produit
+        type: categorical
+      - name: enveloppe
+        type: categorical
+      - name: partenaire
+        type: categorical
+    measures:
+      - name: frais_mandat_preleves_eur
+        agg: sum
+      - name: frais_enveloppe_preleves_eur
+        agg: sum
+      - name: cout_offres_remboursement_eur
+        agg: sum
+        expr: cout_offres_eur
+      - name: revenu_net_frais_eur
+        agg: sum
+        expr: revenu_net_eur
+      - name: nb_ecarts_frais
+        agg: sum
+        expr: "case when ecart_a_investiguer then 1 else 0 end"
+
+  - name: offres
+    description: Droits des offres promotionnelles (remboursements de frais et primes).
+    model: ref('fct_offres_droits')
+    defaults:
+      agg_time_dimension: date_echeance
+    primary_entity: droit_offre
+    entities:
+      - name: contrat
+        type: foreign
+        expr: contrat_id
+    dimensions:
+      - name: date_echeance
+        type: time
+        type_params:
+          time_granularity: day
+      - name: code_promo
+        type: categorical
+      - name: type_offre
+        type: categorical
+      - name: statut_echeance
+        type: categorical
+    measures:
+      - name: montant_droits_offres_eur
+        agg: sum
+        expr: montant_du_eur
+      - name: montant_primes_eur
+        agg: sum
+        expr: "case when type_offre = 'prime' then montant_du_eur else 0 end"
+
+  - name: clients
+    description: Un client par ligne.
+    model: ref('dim_clients')
+    defaults:
+      agg_time_dimension: date_inscription
+    entities:
+      - name: client
+        type: primary
+        expr: client_id
+    dimensions:
+      - name: date_inscription
+        type: time
+        type_params:
+          time_granularity: day
+      - name: date_churn
+        type: time
+        type_params:
+          time_granularity: day
+      - name: canal_acquisition
+        type: categorical
+      - name: tranche_age
+        type: categorical
+      - name: segment_encours
+        type: categorical
+      - name: statut_client
+        type: categorical
+      - name: objectif_placement
+        type: categorical
+      - name: produit_entree
+        type: categorical
+      - name: code_promo_entree
+        type: categorical
+    measures:
+      - name: nb_inscrits
+        agg: count_distinct
+        expr: client_id
+      - name: nb_kyc_valides
+        agg: sum
+        expr: "case when statut_kyc = 'validated' and not est_mineur then 1 else 0 end"
+      - name: nb_clients_investis
+        description: Inscrits ayant ouvert au moins un contrat (actifs ou partis).
+        agg: sum
+        expr: "case when statut_client in ('actif', 'parti') and not est_mineur then 1 else 0 end"
+      - name: nb_clients_partis
+        agg: sum
+        expr: "case when statut_client = 'parti' then 1 else 0 end"
+        agg_time_dimension: date_churn
+
+  - name: tickets
+    description: Tickets du service client.
+    model: ref('fct_tickets')
+    defaults:
+      agg_time_dimension: date_creation
+    entities:
+      - name: ticket
+        type: primary
+        expr: ticket_id
+      - name: client
+        type: foreign
+        expr: client_id
+    dimensions:
+      - name: date_creation
+        type: time
+        type_params:
+          time_granularity: day
+      - name: categorie
+        type: categorical
+      - name: canal
+        type: categorical
+    measures:
+      - name: nb_tickets
+        agg: count
+        expr: ticket_id
+      - name: nb_tickets_insatisfaits
+        agg: sum
+        expr: "case when satisfaction = 'bad' then 1 else 0 end"
+      - name: nb_tickets_notes
+        agg: sum
+        expr: "case when satisfaction is not null then 1 else 0 end"
+      - name: delai_resolution_median_h
+        agg: median
+        expr: delai_resolution_heures

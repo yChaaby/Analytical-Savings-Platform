@@ -1,0 +1,86 @@
+version: 2
+
+models:
+  - name: fct_encours_quotidien
+    description: >
+      Encours par contrat et par jour ouvré (tous partenaires), avec le profil en vigueur.
+      Stock : ne jamais sommer sur plusieurs dates (utiliser la métrique `encours`).
+    config:
+      meta: { owner: equipe-data, domaine: finance }
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [contrat_id, date_valorisation]
+    columns:
+      - name: encours_eur
+        data_tests: [not_null, positive_value]
+      - name: encours_uc_eur
+        description: Part investie en unités de compte (hors fonds euros) ; base des frais de mandat.
+      - name: profil
+        description: Profil de gestion en vigueur ce jour-là (P1 à P10).
+        data_tests: [not_null]
+
+  - name: fct_mouvements
+    description: Un mouvement exécuté par ligne (versements, transferts entrants, rachats).
+    config:
+      meta: { owner: equipe-data, domaine: finance }
+    columns:
+      - name: mouvement_id
+        data_tests: [unique, not_null]
+      - name: sens
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["apport", "retrait"]
+
+  - name: fct_frais_mensuels
+    description: >
+      Frais par contrat et par mois : prélevés et théoriques (mandat et enveloppe), coût des offres
+      de remboursement et revenu net de la société de gestion.
+    config:
+      meta: { owner: equipe-data, domaine: finance }
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [contrat_id, mois]
+    columns:
+      - name: frais_mandat_preleves_eur
+        description: Revenu de la société de gestion (frais de mandat), collecté par le partenaire.
+      - name: revenu_net_eur
+        description: Frais de mandat - remboursements dus au titre des offres.
+      - name: ecart_a_investiguer
+        description: Écart prélevé/théorique au-delà de la tolérance (var rapprochement_frais_tolerance_pct) et d'1 €.
+
+  - name: finance_rapprochement_frais
+    description: Écarts de facturation à traiter avec les partenaires, avec un diagnostic automatique.
+    config:
+      meta: { owner: finance }
+    columns:
+      - name: diagnostic
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["ligne_absente", "taux_mandat_errone", "sur_prelevement", "sous_prelevement"]
+
+  - name: fct_offres_droits
+    description: Droits des offres promotionnelles (calcul dbt) avec statut d'échéance (échu / à venir).
+    config:
+      meta: { owner: finance }
+
+  - name: finance_offres_rapprochement
+    description: >
+      Droits recalculés comparés aux paiements saisis par les opérations, par contrat, offre et période.
+      Statuts : conforme, non_paye, paye_a_tort, doublon, ecart_montant, sans_objet.
+    config:
+      meta: { owner: finance }
+    columns:
+      - name: statut_rapprochement
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["conforme", "non_paye", "paye_a_tort", "doublon", "ecart_montant", "sans_objet"]
+
+  - name: finance_offres_a_regulariser
+    description: Fichier de travail des opérations - paiements d'offres à effectuer ou à récupérer.
+    config:
+      meta: { owner: operations }

@@ -1,0 +1,50 @@
+name: alto_analytics
+version: "1.0.0"
+config-version: 2
+profile: alto_analytics
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets: ["target", "dbt_packages", "logs"]
+
+vars:
+  rapprochement_frais_tolerance_pct: 0.02
+  churn_inactivite_jours: 180
+
+models:
+  alto_analytics:
+    +persist_docs:
+      relation: true
+      columns: true
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      +materialized: table
+      finance:
+        +schema: finance
+        +tags: ["finance"]
+      clients:
+        +schema: clients
+        +tags: ["clients"]
+      service_client:
+        +schema: service_client
+        +tags: ["service_client"]
+    utilities:
+      +materialized: table
+
+snapshots:
+  alto_analytics:
+    +target_schema: snapshots
+
+seeds:
+  alto_analytics:
+    +schema: referentiel

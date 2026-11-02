@@ -1,0 +1,152 @@
+version: 2
+
+models:
+  - name: stg_app__clients
+    description: Clients nettoyés (emails normalisés, canal en minuscules, suppressions logiques exclues).
+    columns:
+      - name: client_id
+        data_tests: [unique, not_null]
+      - name: email
+        description: Email normalisé ; nul pour les enfants mineurs (contact via le représentant légal).
+      - name: canal_acquisition
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["seo", "sea", "parrainage", "comparateur", "partenariat_media", "influence", "direct"]
+      - name: statut_kyc
+        description: Vérification d'identité réglementaire (KYC / LCB-FT).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["validated", "pending", "rejected"]
+      - name: profil_recommande
+        description: Profil P1-P10 issu du questionnaire d'adéquation (MIF 2).
+      - name: representant_legal_id
+        description: Pour un mineur, le client parent qui a ouvert le contrat.
+
+  - name: stg_app__contracts
+    columns:
+      - name: contrat_id
+        data_tests: [unique, not_null]
+      - name: client_id
+        description: >
+          Titulaire. Quelques contrats pointent vers des clients supprimés dans l'application (droit à
+          l'effacement RGPD) alors que le contrat vit encore chez le partenaire : test en avertissement.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_app__clients')
+                field: client_id
+              config:
+                severity: warn
+      - name: produit
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["assurance_vie", "assurance_vie_kids", "per_bancaire", "per_assurantiel", "pea", "cto"]
+      - name: reference_partenaire
+        description: Identifiant du contrat chez le partenaire (format propre à chacun). Clé de jointure des fichiers partenaires.
+        data_tests: [unique, not_null]
+      - name: code_promo
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_app__promo_codes')
+                field: code_promo
+
+  - name: stg_app__movements
+    description: Versements, transferts et rachats, dédoublonnés.
+    columns:
+      - name: mouvement_id
+        data_tests: [unique, not_null]
+      - name: contrat_id
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_app__contracts')
+                field: contrat_id
+      - name: type_mouvement
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ["versement_initial", "versement_programme", "versement_libre", "transfert_entrant", "rachat_partiel", "rachat_total"]
+      - name: montant_eur
+        description: Toujours positif ; le sens est porté par `sens` (apport / retrait).
+        data_tests: [not_null, positive_value]
+
+  - name: stg_app__mandate_changes
+    columns:
+      - name: changement_id
+        data_tests: [unique, not_null]
+
+  - name: stg_app__products
+    columns:
+      - name: produit
+        data_tests: [unique, not_null]
+
+  - name: stg_app__promo_codes
+    columns:
+      - name: code_promo
+        data_tests: [unique, not_null]
+
+  - name: stg_app__promo_payments
+    description: Paiements saisis manuellement par les opérations. Peut contenir des erreurs (doublons, oublis).
+    columns:
+      - name: paiement_id
+        data_tests: [unique, not_null]
+
+  - name: stg_suravenir__valorisations
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [reference_partenaire, date_valorisation]
+    columns:
+      - name: encours_eur
+        data_tests: [positive_value]
+
+  - name: stg_suravenir__frais
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [reference_partenaire, mois]
+
+  - name: stg_spirica__valuations
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [reference_partenaire, date_valorisation]
+
+  - name: stg_spirica__fees
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [reference_partenaire, mois]
+
+  - name: stg_ca_titres__positions
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [reference_partenaire, date_valorisation]
+
+  - name: stg_ca_titres__frais
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [reference_partenaire, mois]
+
+  - name: stg_market__prix_supports
+    data_tests:
+      - unique_combination:
+          arguments:
+            columns: [support, date_prix]
+
+  - name: stg_crm__contacts
+    columns:
+      - name: contact_id
+        data_tests: [unique, not_null]
+
+  - name: stg_zendesk__tickets
+    columns:
+      - name: ticket_id
+        data_tests: [unique, not_null]
