@@ -1,4 +1,4 @@
-# Alto Analytics : plateforme analytique d'un gérant d'épargne en ligne
+#  plateforme analytique d'un gérant d'épargne en ligne
 
 ![CI](https://github.com/<votre-compte>/alto-analytics/actions/workflows/ci.yml/badge.svg)
 
@@ -11,9 +11,7 @@ Il couvre la chaîne de données complète :
 3. semantic layer MetricFlow ;
 4. dashboards Metabase en local.
 
-> Les données sont **100 % synthétiques**. Leur structure et leurs règles métier reprennent
-> l'offre publique de Yomoni (enveloppes, partenaires, profils P1 à P10, grille de frais,
-> mécanique des offres promotionnelles). Voir [Les données](#les-données).
+> Les données sont **100 % synthétiques**. Leur structure et leurs règles métier.
 
 ---
 
